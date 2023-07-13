@@ -1,0 +1,56 @@
+﻿@page "/"
+@using BlazorChat.UI.Models;
+@using Microsoft.AspNetCore.SignalR;
+@using Microsoft.AspNetCore.SignalR.Client;
+
+@inject NavigationManager navigationManager;
+
+<EditForm Model="message" class="form-control" OnSubmit="SendMessage">
+    <div class="form-group">
+        <label for="Username">Username</label>
+        <InputText class="form-control" @bind-Value=@message.Username id="Username" />
+    </div>
+    <div class="form-group">
+        <label for="Body">Message Body </label>
+        <InputTextArea class="form-control" @bind-Value=@message.Body id="Body" />
+    </div>
+    <div class="form-group">
+        <button class="btn btn-primary" type="submit">Send</button>
+    </div>
+</EditForm>
+
+
+@code {
+    Message message = new Message();
+    private  HubConnection connection=null;
+    private static List<Message> messages = new List<Message>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        connection = new HubConnectionBuilder()
+         .WithUrl(navigationManager.ToAbsoluteUri("https://localhost:7289/ChatHub"))
+         .Build();
+
+        connection.On<Message>("ReceiveMessage", (Message msg) =>
+       {
+           messages.Add(msg);
+           InvokeAsync(StateHasChanged);
+       });
+
+        await connection.StartAsync();
+    }
+
+
+    public async Task ReceiveMessage()
+    {
+        
+    }
+
+    public async Task SendMessage()
+    {
+        await connection.SendAsync("GetMessage", message);
+    }
+
+
+}
